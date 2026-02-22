@@ -6,6 +6,7 @@ import Viewport from './components/Viewport'
 import ReachabilityVoxels from './components/ReachabilityVoxels'
 import ClipPlaneWidget from './components/ClipPlaneWidget'
 import { COLORMAP_NAMES, type ColormapName } from './lib/colormaps'
+import RobotModel from './components/RobotModel'
 
 // Initial clip plane: horizontal at origin, normal up (+Y in Three.js = +Z robot).
 // Clips nothing by default since the robot workspace is above y = 0.
@@ -21,6 +22,11 @@ export default function App() {
     threshold: { value: 0.0, min: 0.0, max: 1.0, step: 0.01, label: 'Threshold' },
     colormap:  { options: COLORMAP_NAMES as unknown as string[], label: 'Colormap' },
     opacity:   { value: 0.8, min: 0.1, max: 1.0, step: 0.01, label: 'Opacity' },
+  })
+
+  const { showRobot, robotOpacity } = useControls('Robot', {
+    showRobot:    { value: true,  label: 'Show robot' },
+    robotOpacity: { value: 0.4, min: 0.05, max: 1.0, step: 0.01, label: 'Opacity' },
   })
 
   // Clip controls — axis sliders and free-plane flip are shown conditionally
@@ -138,6 +144,7 @@ export default function App() {
           {clipMode === 'Free plane' && (
             <ClipPlaneWidget onPlaneChange={setFreePlane} />
           )}
+          <RobotModel visible={showRobot} opacity={robotOpacity} />
         </Viewport>
       </main>
     </div>
