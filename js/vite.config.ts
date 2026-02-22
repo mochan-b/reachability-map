@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  publicDir: '../assets',
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
