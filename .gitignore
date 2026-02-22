@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# JavaScript
+js/node_modules/
+js/dist/
+js/.vite/
+
+# Editors / OS
+.DS_Store
+*.swp
+.env
