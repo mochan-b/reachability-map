@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useHdf5 } from './hooks/useHdf5'
+import Viewport from './components/Viewport'
 
 export default function App() {
   const [source, setSource] = useState<File | string | null>(
@@ -7,7 +8,6 @@ export default function App() {
   )
   const { data, loading, error } = useHdf5(source)
 
-  // Compute stats from flat Float32Array
   const stats = data
     ? (() => {
         const r = data.reachabilityIndex
@@ -22,33 +22,42 @@ export default function App() {
     : null
 
   return (
-    <div className="flex flex-col h-screen w-screen items-center justify-center gap-6 bg-gray-900 text-white">
-      <h1 className="text-2xl font-semibold tracking-tight">reachability-map</h1>
+    <div className="flex h-screen w-screen overflow-hidden bg-gray-950 text-white">
+      {/* Sidebar */}
+      <aside className="w-64 flex-shrink-0 flex flex-col gap-4 p-4 bg-gray-950 border-r border-gray-800 overflow-y-auto">
+        <h1 className="text-lg font-semibold tracking-tight">reachability-map</h1>
 
-      <label className="cursor-pointer rounded border border-gray-600 px-4 py-2 text-sm hover:border-gray-400 transition-colors">
-        Load HDF5 file
-        <input
-          type="file"
-          accept=".h5,.hdf5"
-          className="hidden"
-          onChange={(e) => setSource(e.target.files?.[0] ?? null)}
-        />
-      </label>
+        <label className="cursor-pointer rounded border border-gray-600 px-3 py-1.5 text-sm text-center hover:border-gray-400 transition-colors">
+          Load HDF5
+          <input
+            type="file"
+            accept=".h5,.hdf5"
+            className="hidden"
+            onChange={(e) => setSource(e.target.files?.[0] ?? null)}
+          />
+        </label>
 
-      {loading && <p className="text-gray-400 text-sm">Loading…</p>}
-      {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        {loading && <p className="text-gray-400 text-xs">Loading…</p>}
+        {error   && <p className="text-red-400 text-xs">Error: {error}</p>}
 
-      {data && stats && (
-        <div className="font-mono text-sm text-gray-300 space-y-1 text-left">
-          <p>Shape: [{data.gridShape.join(', ')}]</p>
-          <p>Min: {stats.min.toFixed(4)}  Max: {stats.max.toFixed(4)}</p>
-          <p>Reachable: {stats.reachable} / {stats.total}</p>
-          <p>Delta: {data.gridAttrs.delta}</p>
-          <p>Mode: {data.attrs['mode']}</p>
-          <p>Robot: {data.attrs['robot_name']}</p>
-          <p>Orientations: {data.attrs['n_orientations']}</p>
-        </div>
-      )}
+        {data && stats && (
+          <div className="font-mono text-xs text-gray-300 space-y-1">
+            <p>Shape: [{data.gridShape.join(', ')}]</p>
+            <p>Min:  {stats.min.toFixed(4)}</p>
+            <p>Max:  {stats.max.toFixed(4)}</p>
+            <p>Reachable: {stats.reachable} / {stats.total}</p>
+            <p>Delta: {data.gridAttrs.delta} m</p>
+            <p>Mode: {data.attrs['mode']}</p>
+            <p>Robot: {data.attrs['robot_name']}</p>
+            <p>IK: {data.attrs['ik_solver']}</p>
+          </div>
+        )}
+      </aside>
+
+      {/* 3D Viewport */}
+      <main className="flex-1 relative">
+        <Viewport />
+      </main>
     </div>
   )
 }
