@@ -15,6 +15,12 @@ dependencies = [
     "tqdm>=4.65.0",
 ]
 
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.0.0",
+    "curobo",
+]
+
 [project.scripts]
 reachability-map = "reachability_map.cli:main"
 

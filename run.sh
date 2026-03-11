@@ -1,0 +1,1 @@
+LD_LIBRARY_PATH=.venv-curobo/lib/python3.10/site-packages/nvidia/cu13/lib:.venv-curobo/lib/python3.10/site-packages/nvidia/cuda_nvrtc/lib:$LD_LIBRARY_PATH .venv-curobo/bin/python3 -m reachability_map.cli --urdf assets/panda.urdf --gripper-link panda_link8 --output panda_gpu.h5 --use-gpu --xyz-delta 0.1

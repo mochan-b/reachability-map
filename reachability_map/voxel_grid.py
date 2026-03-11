@@ -39,16 +39,20 @@ def build_voxel_grid(bounds: WorkspaceBounds, delta: float) -> tuple[np.ndarray,
 
 
 def auto_bounds(robot, qlim: np.ndarray, margin: float = 0.1) -> WorkspaceBounds:
-    """Estimate workspace bounds from the robot's maximum joint configuration.
+    """Estimate workspace bounds by summing link translation magnitudes.
+
+    Walks the kinematic chain from the default end-effector back to the root,
+    summing the Euclidean length of each link's fixed translation offset.  This
+    gives the theoretical maximum reach (all links fully extended), which is a
+    reliable upper bound regardless of joint configuration.
 
     Parameters
     ----------
     robot:
-        A robot model that exposes a ``fkine`` method (e.g. a
-        ``roboticstoolbox`` robot instance).
+        An ERobot instance with ``ee_links`` and per-link ``ets``.
     qlim:
-        Joint limits array of shape (2, n_joints).  Row 0 contains lower
-        limits and row 1 contains upper limits.
+        Joint limits array of shape (2, n_joints).  Unused; kept for API
+        compatibility.
     margin:
         Extra distance added to the estimated reach (metres).
 
@@ -57,7 +61,12 @@ def auto_bounds(robot, qlim: np.ndarray, margin: float = 0.1) -> WorkspaceBounds
     WorkspaceBounds
         A symmetric bounding box of side 2 * reach centred at the origin.
     """
-    q_max = qlim[1]
-    fk = robot.fkine(q_max)
-    reach = np.linalg.norm(fk.t) + margin
+    link = robot.ee_links[0]
+    reach = 0.0
+    while link is not None:
+        n = link.ets.n
+        T = link.ets.fkine(np.zeros(n))
+        reach += float(np.linalg.norm(T.t))
+        link = link.parent
+    reach += margin
     return WorkspaceBounds(-reach, reach, -reach, reach, -reach, reach)

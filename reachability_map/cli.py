@@ -78,6 +78,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--workers", type=int, default=None, metavar="N",
                    help="Number of worker processes (default: os.cpu_count()).")
 
+    # GPU
+    p.add_argument("--use-gpu", action="store_true",
+                   help="Use cuRobo for GPU-accelerated batched IK.")
+    p.add_argument("--gpu-batch-size", type=int, default=2000, metavar="N",
+                   help="Number of target poses to batch in each GPU call.")
+
     # Misc
     p.add_argument("--quiet", action="store_true",
                    help="Suppress progress output.")
@@ -109,6 +115,8 @@ def main(argv: list[str] | None = None) -> None:
         ik_tol=args.ik_tol,
         n_workers=args.workers,
         quiet=args.quiet,
+        use_gpu=args.use_gpu,
+        gpu_batch_size=args.gpu_batch_size,
     )
 
     try:

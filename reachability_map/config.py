@@ -30,3 +30,5 @@ class ReachabilityConfig:
     ik_tol: float = 1e-6
     n_workers: Optional[int] = None
     quiet: bool = False
+    use_gpu: bool = False
+    gpu_batch_size: int = 2000

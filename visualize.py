@@ -20,26 +20,38 @@ import pyvista as pv
 from reachability_map.hdf5_io import read_hdf5
 
 # Visual mesh files bundled with rtbdata (roboticstoolbox's data package).
-# Maps URDF link name → mesh filename relative to the franka_description meshes dir.
-# finger.dae is shared by both fingers (they are mirror images).
-_RTBDATA_MESH_DIR = (
+_RTBDATA_XACRO = (
     Path(__file__).parent
     / ".venv/lib/python3.12/site-packages/rtbdata/xacro"
-    / "franka_description/meshes/visual"
 )
 
-_LINK_MESHES: dict[str, str] = {
-    "panda_link0":     "link0.dae",
-    "panda_link1":     "link1.dae",
-    "panda_link2":     "link2.dae",
-    "panda_link3":     "link3.dae",
-    "panda_link4":     "link4.dae",
-    "panda_link5":     "link5.dae",
-    "panda_link6":     "link6.dae",
-    "panda_link7":     "link7.dae",
-    "panda_hand":      "hand.dae",
+# Panda: maps URDF link name → mesh filename relative to the meshes/visual dir.
+# finger.dae is shared by both fingers (they are mirror images).
+_PANDA_MESH_DIR = _RTBDATA_XACRO / "franka_description/meshes/visual"
+_PANDA_LINK_MESHES: dict[str, str] = {
+    "panda_link0":       "link0.dae",
+    "panda_link1":       "link1.dae",
+    "panda_link2":       "link2.dae",
+    "panda_link3":       "link3.dae",
+    "panda_link4":       "link4.dae",
+    "panda_link5":       "link5.dae",
+    "panda_link6":       "link6.dae",
+    "panda_link7":       "link7.dae",
+    "panda_hand":        "hand.dae",
     "panda_leftfinger":  "finger.dae",
     "panda_rightfinger": "finger.dae",
+}
+
+# UR10: maps URDF link name → mesh filename relative to the meshes/ur10/visual dir.
+_UR10_MESH_DIR = _RTBDATA_XACRO / "ur_description/meshes/ur10/visual"
+_UR10_LINK_MESHES: dict[str, str] = {
+    "base_link":     "base.dae",
+    "shoulder_link": "shoulder.dae",
+    "upper_arm_link": "upperarm.dae",
+    "forearm_link":  "forearm.dae",
+    "wrist_1_link":  "wrist1.dae",
+    "wrist_2_link":  "wrist2.dae",
+    "wrist_3_link":  "wrist3.dae",
 }
 
 
@@ -61,16 +73,30 @@ def _dae_to_polydata(path: Path) -> pv.PolyData:
     return pv.PolyData(combined.vertices.astype(np.float32), faces)
 
 
-def load_robot_meshes(q: np.ndarray | None = None) -> list[pv.PolyData]:
-    """Return a list of PyVista meshes for each Panda link at joint config *q*.
+def load_robot_meshes(robot_name: str, q: np.ndarray | None = None) -> list[pv.PolyData]:
+    """Return a list of PyVista meshes for each robot link at joint config *q*.
 
-    Uses rtb.models.Panda() for forward kinematics and the DAE mesh files
+    Uses roboticstoolbox for forward kinematics and the DAE mesh files
     bundled with rtbdata for geometry. If *q* is None, the home position
     (all joints at zero) is used.
+
+    Parameters
+    ----------
+    robot_name:
+        Robot model name as stored in the HDF5 attrs (e.g. "Panda", "UR10").
     """
     import roboticstoolbox as rtb
 
-    robot = rtb.models.Panda()
+    robot_name_upper = robot_name.upper()
+    if robot_name_upper == "UR10":
+        robot = rtb.models.UR10()
+        mesh_dir = _UR10_MESH_DIR
+        link_meshes = _UR10_LINK_MESHES
+    else:
+        robot = rtb.models.Panda()
+        mesh_dir = _PANDA_MESH_DIR
+        link_meshes = _PANDA_LINK_MESHES
+
     if q is None:
         q = np.zeros(robot.n)
 
@@ -81,11 +107,11 @@ def load_robot_meshes(q: np.ndarray | None = None) -> list[pv.PolyData]:
 
     meshes: list[pv.PolyData] = []
     for link_name in all_links:
-        mesh_file = _LINK_MESHES.get(link_name)
+        mesh_file = link_meshes.get(link_name)
         if mesh_file is None:
             continue
 
-        mesh_path = _RTBDATA_MESH_DIR / mesh_file
+        mesh_path = mesh_dir / mesh_file
         if not mesh_path.exists():
             print(f"Warning: mesh not found for {link_name}: {mesh_path}", file=sys.stderr)
             continue
@@ -177,8 +203,9 @@ def visualize(
         )
 
     if show_robot:
-        print("Loading robot geometry...")
-        robot_meshes = load_robot_meshes()
+        robot_name = data["attrs"].get("robot_name", "Panda")
+        print(f"Loading robot geometry ({robot_name})...")
+        robot_meshes = load_robot_meshes(robot_name)
         for mesh in robot_meshes:
             pl.add_mesh(mesh, color="lightgrey", opacity=1.0, smooth_shading=True)
 
