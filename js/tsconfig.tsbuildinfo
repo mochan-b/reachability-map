@@ -1,0 +1,1 @@
+{"root":["./src/vite-env.d.ts","./src/web/App.tsx","./src/web/main.tsx","./src/web/components/ClipPlaneWidget.tsx","./src/web/components/ReachabilityVoxels.tsx","./src/web/components/RobotModel.tsx","./src/web/components/Viewport.tsx","./src/web/hooks/useHdf5.ts","./src/web/lib/colormaps.ts","./src/web/lib/hdf5Reader.ts"],"version":"5.9.3"}

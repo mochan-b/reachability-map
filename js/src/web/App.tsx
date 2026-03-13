@@ -18,10 +18,11 @@ export default function App() {
   )
   const { data, loading, error } = useHdf5(source)
 
-  const { threshold, colormap, opacity } = useControls('Display', {
+  const { threshold, colormap, opacity, showZeroVoxels } = useControls('Display', {
     threshold: { value: 0.0, min: 0.0, max: 1.0, step: 0.01, label: 'Threshold' },
     colormap:  { options: COLORMAP_NAMES as unknown as string[], label: 'Colormap' },
     opacity:   { value: 0.8, min: 0.1, max: 1.0, step: 0.01, label: 'Opacity' },
+    showZeroVoxels: { value: false, label: 'Show 0 voxels' },
   })
 
   const { showRobot, robotOpacity } = useControls('Robot', {
@@ -138,6 +139,7 @@ export default function App() {
               threshold={threshold}
               colormap={colormap as ColormapName}
               opacity={opacity}
+              showZeroVoxels={showZeroVoxels}
               clipPlanes={clipPlanes}
             />
           )}

@@ -9,6 +9,7 @@ interface Props {
   threshold: number
   colormap: ColormapName
   opacity: number
+  showZeroVoxels: boolean
   clipPlanes: THREE.Plane[]
 }
 
@@ -16,7 +17,14 @@ interface Props {
 const _mat = new THREE.Matrix4()
 const _col = new THREE.Color()
 
-export default function ReachabilityVoxels({ data, threshold, colormap, opacity, clipPlanes }: Props) {
+export default function ReachabilityVoxels({
+  data,
+  threshold,
+  colormap,
+  opacity,
+  showZeroVoxels,
+  clipPlanes,
+}: Props) {
   const meshRef = useRef<THREE.InstancedMesh>(null!)
   const { reachabilityIndex, voxelCenters, gridAttrs } = data
   const { gl } = useThree()
@@ -24,21 +32,21 @@ export default function ReachabilityVoxels({ data, threshold, colormap, opacity,
   // Three.js requires this flag on the renderer for per-material clipping planes
   useEffect(() => { gl.localClippingEnabled = true }, [gl])
 
-  // ── Build sorted index arrays once per dataset ───────────────────────────
-  // Indices of all non-zero voxels, sorted by reachability descending.
+  // ── Build sorted index arrays once per dataset / filter mode ─────────────
+  // Indices of all visible candidate voxels, sorted by reachability descending.
   // This lets us control the visible set with a single mesh.count update:
   //   mesh.count = K  →  shows the K voxels with highest reachability (≥ threshold)
   const { sortedIndices, sortedRi } = useMemo(() => {
     const indices: number[] = []
     for (let i = 0; i < reachabilityIndex.length; i++) {
-      if (reachabilityIndex[i] > 0) indices.push(i)
+      if (showZeroVoxels || reachabilityIndex[i] > 0) indices.push(i)
     }
     indices.sort((a, b) => reachabilityIndex[b] - reachabilityIndex[a])
     return {
       sortedIndices: indices,
       sortedRi: Float32Array.from(indices, (i) => reachabilityIndex[i]),
     }
-  }, [reachabilityIndex])
+  }, [reachabilityIndex, showZeroVoxels])
 
   const maxCount = sortedIndices.length
 
