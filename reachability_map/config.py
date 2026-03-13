@@ -32,3 +32,4 @@ class ReachabilityConfig:
     quiet: bool = False
     use_gpu: bool = False
     gpu_batch_size: int = 2000
+    tight_bounds: bool = True

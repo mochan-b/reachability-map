@@ -62,7 +62,7 @@ class CuroboIKSolver:
             num_seeds=20,
             self_collision_check=True,
             collision_checker_type="mesh",
-            use_cuda_graph=True,
+            use_cuda_graph=False,
         )
         self._solver = IKSolver(ik_config)
 

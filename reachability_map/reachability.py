@@ -22,11 +22,6 @@ def run(config: ReachabilityConfig) -> None:
     n_joints = int(qlim.shape[1])
     robot_name: str = robot.name
 
-    bounds = config.bounds if config.bounds is not None else auto_bounds(robot, qlim)
-    centers_flat, grid_shape = build_voxel_grid(bounds, config.xyz_delta)
-    nx, ny, nz = grid_shape
-    n_voxels = len(centers_flat)
-
     if config.n_orientations is not None:
         n_orientations = config.n_orientations
         actual_quat_delta = (3.0 * pi**2 / n_orientations) ** (1.0 / 3.0)
@@ -35,6 +30,38 @@ def run(config: ReachabilityConfig) -> None:
         actual_quat_delta = config.quat_delta
 
     orientations = sample_orientations(n_orientations)  # (N, 4) float32
+
+    bounds = config.bounds if config.bounds is not None else auto_bounds(robot, qlim)
+    gpu_solver = None
+
+    if config.tight_bounds and config.bounds is None:
+        if not config.quiet:
+            print("Finding tight bounds...")
+        from .bounds_finder import find_tight_bounds
+        if config.use_gpu:
+            from .curobo_solver import CuroboIKSolver
+            gpu_solver = CuroboIKSolver(config.urdf_path, config.gripper_link)
+        bounds = find_tight_bounds(
+            initial_bounds=bounds,
+            delta=config.xyz_delta,
+            urdf_path=config.urdf_path,
+            gripper_link=config.gripper_link,
+            orientations=orientations,
+            solver_config={
+                "solver_name": config.ik_solver,
+                "ilimit": config.ik_ilimit,
+                "slimit": config.ik_slimit,
+                "tol": config.ik_tol,
+            },
+            use_gpu=config.use_gpu,
+            gpu_solver=gpu_solver,
+            gpu_batch_size=config.gpu_batch_size,
+            quiet=config.quiet,
+        )
+
+    centers_flat, grid_shape = build_voxel_grid(bounds, config.xyz_delta)
+    nx, ny, nz = grid_shape
+    n_voxels = len(centers_flat)
 
     if not config.quiet:
         print(f"Robot      : {robot_name} ({n_joints} joints)")
@@ -62,7 +89,8 @@ def run(config: ReachabilityConfig) -> None:
     }
 
     if config.use_gpu:
-        run_gpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_centers_3d)
+        run_gpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_centers_3d,
+                gpu_solver=gpu_solver if config.tight_bounds and config.bounds is None else None)
     else:
         run_cpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_centers_3d)
 
@@ -124,10 +152,13 @@ def run_cpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_cen
     _print_summary(config, n_reachable, n_voxels)
 
 
-def run_gpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_centers_3d) -> None:
-    from .curobo_solver import CuroboIKSolver
-    
-    solver = CuroboIKSolver(config.urdf_path, config.gripper_link)
+def run_gpu(config, centers_flat, grid_shape, orientations, grid_meta, voxel_centers_3d,
+            gpu_solver=None) -> None:
+    if gpu_solver is not None:
+        solver = gpu_solver
+    else:
+        from .curobo_solver import CuroboIKSolver
+        solver = CuroboIKSolver(config.urdf_path, config.gripper_link)
     n_voxels = len(centers_flat)
     n_orientations = len(orientations)
     

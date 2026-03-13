@@ -84,6 +84,14 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gpu-batch-size", type=int, default=2000, metavar="N",
                    help="Number of target poses to batch in each GPU call.")
 
+    # Tight bounds pre-pass
+    p.add_argument(
+        "--no-tight-bounds",
+        action="store_false",
+        dest="tight_bounds",
+        help="Skip the tight-bounds pre-pass and use auto-estimated bounds directly.",
+    )
+
     # Misc
     p.add_argument("--quiet", action="store_true",
                    help="Suppress progress output.")
@@ -117,6 +125,7 @@ def main(argv: list[str] | None = None) -> None:
         quiet=args.quiet,
         use_gpu=args.use_gpu,
         gpu_batch_size=args.gpu_batch_size,
+        tight_bounds=args.tight_bounds,
     )
 
     try:
